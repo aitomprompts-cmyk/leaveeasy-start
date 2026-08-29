@@ -1,16 +1,20 @@
 // ─────────────────────────────────────────────────────────────
 // js/leave-request-detail.js — หน้าที่ 3 รายละเอียดใบลา
-// สัปดาห์ที่ 6 (ต้นสัปดาห์): อ่านจากข้อมูลปลอม และเปลี่ยนสถานะในหน่วยความจำ
+// สัปดาห์ที่ 6: อ่านใบลาและความเห็นจาก Firestore จริง
+// การเปลี่ยนสถานะและการเขียนความเห็นยังเปลี่ยนแค่ในหน่วยความจำ
+// ยังไม่บันทึกลง Firestore (เป็นงานของสัปดาห์ที่ 7)
 // ─────────────────────────────────────────────────────────────
 
-(function () {
+import { getLeaveRequests, getApprovals } from "./data.js";
+
+(async function () {
   var รหัสใบลา = ค่าจากURL("id");
   var กล่องใบลา = document.getElementById("กล่องใบลา");
   var กล่องความเห็น = document.getElementById("กล่องความเห็น");
 
-  // หาใบลาจากข้อมูลปลอม บวกกับใบที่เพิ่งยื่นในหน้าที่ 2
+  // หาใบลาจาก Firestore บวกกับใบที่เพิ่งยื่นในหน้าที่ 2
   var ใบลาที่ยื่นใหม่ = JSON.parse(sessionStorage.getItem("ใบลาที่ยื่นใหม่") || "[]");
-  var ใบ = window.LEAVE_DATA.leaveRequests.concat(ใบลาที่ยื่นใหม่)
+  var ใบ = (await getLeaveRequests()).concat(ใบลาที่ยื่นใหม่)
     .find(function (x) { return x.id === รหัสใบลา; });
 
   if (!ใบ) {
@@ -18,7 +22,8 @@
     return;
   }
 
-  var ความเห็น = window.LEAVE_DATA.approvals.filter(function (c) { return c.requestId === ใบ.id; });
+  // ใบที่เพิ่งยื่นใหม่ยังไม่มีใน Firestore จึงยังไม่มีความเห็น
+  var ความเห็น = ใบ.id.indexOf("lr-ใหม่-") === 0 ? [] : await getApprovals(ใบ.id);
 
   วาดใบลา();
   วาดความเห็น();

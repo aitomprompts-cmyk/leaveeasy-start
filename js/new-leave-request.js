@@ -1,16 +1,20 @@
 // ─────────────────────────────────────────────────────────────
 // js/new-leave-request.js — หน้าที่ 2 ยื่นใบลาใหม่
-// สัปดาห์ที่ 6 (ต้นสัปดาห์): เก็บไว้ในหน่วยความจำของเบราว์เซอร์เท่านั้น
+// สัปดาห์ที่ 6: อ่านประเภทการลาจาก Firestore จริง
+// การบันทึกใบลายังเก็บไว้ในหน่วยความจำของเบราว์เซอร์เท่านั้น
 // ยังไม่บันทึกลงฐานข้อมูล (เป็นงานของสัปดาห์ที่ 7)
 // ─────────────────────────────────────────────────────────────
 
-(function () {
+import { getLeaveTypes } from "./data.js";
+
+(async function () {
   var ฟอร์ม = document.getElementById("ฟอร์มใบลา");
   var ช่องประเภท = document.getElementById("leaveTypeId");
   var กล่องเตือน = document.getElementById("ข้อความเตือน");
 
-  // เติมรายการเลื่อนลงด้วยประเภทการลาที่มีอยู่
-  window.LEAVE_DATA.leaveTypes.forEach(function (ประเภท) {
+  // เติมรายการเลื่อนลงด้วยประเภทการลาที่มีอยู่จริงใน Firestore
+  var ประเภททั้งหมด = await getLeaveTypes();
+  ประเภททั้งหมด.forEach(function (ประเภท) {
     var ตัวเลือก = document.createElement("option");
     ตัวเลือก.value = ประเภท.id;
     ตัวเลือก.textContent = ประเภท.name;
@@ -38,7 +42,7 @@
       return;
     }
 
-    var ประเภท = window.LEAVE_DATA.leaveTypes.find(function (t) { return t.id === ค่า.leaveTypeId; });
+    var ประเภท = ประเภททั้งหมด.find(function (t) { return t.id === ค่า.leaveTypeId; });
 
     // สัปดาห์ที่ 6 ยังไม่มีล็อกอิน จึงสมมติว่าผู้ขอลาคือ สมชาย ใจดี
     var ใบใหม่ = {
