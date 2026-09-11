@@ -4,7 +4,7 @@
 
 **ADT-RAISE Non-Degree Batch 2 · Module 2: MVP-Ready** (สัปดาห์ที่ 6–9) · repo ใบงาน LeaveEasy
 
-🌐 **เว็บออนไลน์:** _(จะเติมหลัง deploy ขึ้น Firebase Hosting)_
+🌐 **เว็บออนไลน์:** https://test-5f6dd.web.app · ต้องสมัครสมาชิกหรือล็อกอินก่อนจึงจะเห็นข้อมูล
 
 ---
 
