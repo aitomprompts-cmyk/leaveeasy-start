@@ -27,6 +27,16 @@
 
 **คุณไม่ต้องจำคำสั่งอะไรเลย** — เครื่องมือที่ขาด ให้ Claude ตรวจและติดตั้งให้
 
+### ตั้งค่า Firebase ก่อนใช้งาน
+
+ค่าเชื่อมต่อ Firebase จริง **ไม่ได้อยู่ใน repo** เพราะ `.gitignore` กันไว้ · ดาวน์โหลด repo ไปแล้วต้องสร้างเองครั้งเดียว
+
+1. คัดลอกไฟล์ `js/firebase-config.example.js` เป็นชื่อ `js/firebase-config.js`
+2. เปิด Firebase Console → ⚙️ Project settings → Your apps → คัดลอกค่า `firebaseConfig`
+3. วางค่าแทนข้อความ `วางค่า-...-ที่นี่` ในไฟล์ `js/firebase-config.js`
+
+> 🔒 ห้าม commit ไฟล์ `js/firebase-config.js` ขึ้น GitHub
+
 ---
 
 ## 📁 ในโฟลเดอร์นี้มีอะไร
