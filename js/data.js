@@ -16,7 +16,7 @@
 // ─────────────────────────────────────────────────────────────
 
 import { db } from "./firebase-config.js";
-import { collection, doc, getDocs, setDoc, query, limit } from "firebase/firestore";
+import { collection, doc, getDocs, setDoc, query, limit, orderBy } from "firebase/firestore";
 
 // ข้อมูลตัวอย่าง (seed) ตรงตาม leaveeasy-spec.md หัวข้อ 7 — ใส่ลง Firestore ครั้งแรกที่ยังว่างอยู่
 const ข้อมูลตั้งต้น = {
@@ -152,9 +152,10 @@ export async function getLeaveTypes() {
   return snap.docs.map(function (d) { return { id: d.id, ...d.data() }; });
 }
 
+// เรียงจากใหม่ไปเก่าตาม createdAt (เก็บเป็นข้อความ "YYYY-MM-DD HH:mm" จึงเรียงตามตัวอักษรได้ถูกต้อง)
 export async function getLeaveRequests() {
   await เตรียมข้อมูลถ้าว่าง();
-  const snap = await getDocs(collection(db, "leaveRequests"));
+  const snap = await getDocs(query(collection(db, "leaveRequests"), orderBy("createdAt", "desc")));
   return snap.docs.map(function (d) { return { id: d.id, ...d.data() }; });
 }
 

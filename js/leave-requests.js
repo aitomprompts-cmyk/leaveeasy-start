@@ -11,7 +11,8 @@ import { getLeaveRequests } from "./data.js";
   // ใบลาจาก Firestore บวกกับใบที่เพิ่งยื่นในหน้าถัดไป
   // (การยื่นใบลายังไม่บันทึกลง Firestore จริง เป็นงานของสัปดาห์ที่ 7 จึงเก็บไว้ใน sessionStorage ก่อน)
   var ใบลาที่ยื่นใหม่ = JSON.parse(sessionStorage.getItem("ใบลาที่ยื่นใหม่") || "[]");
-  var ใบลาทั้งหมด = (await getLeaveRequests()).concat(ใบลาที่ยื่นใหม่);
+  // เรียงจากใหม่ไปเก่า — ใบที่เพิ่งยื่นใหม่สุดเสมอ จึงวางไว้ก่อนใบจาก Firestore ที่เรียงมาแล้ว
+  var ใบลาทั้งหมด = ใบลาที่ยื่นใหม่.slice().reverse().concat(await getLeaveRequests());
 
   // ถ้ามีสถานะติดมาท้าย URL ให้กรองเฉพาะสถานะนั้น
   var สถานะที่กรอง = ค่าจากURL("status");
