@@ -119,7 +119,7 @@ textarea { min-height: 110px; resize: vertical; }
 .comment { border-left: 4px solid var(--สีขอบ); padding: 6px 0 6px 12px; margin-bottom: 12px; }
 .comment .meta { color: var(--สีจาง); font-size: 15px; }
 
-/* ── กล่องแสดงตัวเลขสรุป ── */
+/* ── กล่องตัวเลขบนแดชบอร์ด ── */
 .stat-row { display: flex; flex-wrap: wrap; gap: 14px; }
 .stat {
   flex: 1 1 200px;

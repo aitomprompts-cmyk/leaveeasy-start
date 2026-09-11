@@ -1,18 +1,22 @@
-// ตั้งค่าการเชื่อมต่อ Firebase — ไฟล์ตัวอย่าง ไม่มีค่าจริง
-// วิธีใช้: คัดลอกไฟล์นี้เป็นชื่อ js/firebase-config.js แล้ววางค่าจาก Firebase Console
-//          (⚙️ Project settings → Your apps → firebaseConfig)
-// ไฟล์ js/firebase-config.js ถูก .gitignore กันไว้ ห้าม commit ขึ้น GitHub
-import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+// ─────────────────────────────────────────────────────────────
+// js/firebase-config.example.js — ไฟล์ตัวอย่างค่าตั้งค่า Firebase
+//
+// 📌 วิธีใช้
+//   1. คัดลอกไฟล์นี้เป็น  js/firebase-config.js
+//   2. แทนค่าทุกช่องด้วยค่าของโปรเจกต์ตัวเอง
+//      (Firebase Console → ⚙️ Project settings → Your apps → เลือกแอปเว็บ)
+//   3. ขั้นตอนแบบละเอียดอยู่ในไฟล์ SETUP.md ขั้นที่ 4
+//
+// ⚠️ ไฟล์ js/firebase-config.js ถูก .gitignore กันไว้ **ห้าม commit**
+//    ค่าชุดนี้ไม่ใช่รหัสผ่าน แต่เป็นค่าเฉพาะของแต่ละโปรเจกต์
+//    สิ่งที่กันไม่ให้คนอื่นเข้ามาอ่านข้อมูลของเราคือ Security Rules ไม่ใช่การซ่อนค่าชุดนี้
+// ─────────────────────────────────────────────────────────────
 
-const firebaseConfig = {
-  apiKey: "วางค่า-apiKey-ที่นี่",
-  authDomain: "วางค่า-authDomain-ที่นี่",
-  projectId: "วางค่า-projectId-ที่นี่",
-  storageBucket: "วางค่า-storageBucket-ที่นี่",
-  messagingSenderId: "วางค่า-messagingSenderId-ที่นี่",
-  appId: "วางค่า-appId-ที่นี่"
+export const firebaseConfig = {
+  apiKey: "ใส่ค่า apiKey ของคุณ",
+  authDomain: "ใส่ชื่อโปรเจกต์ของคุณ.firebaseapp.com",
+  projectId: "ใส่ project id ของคุณ",
+  storageBucket: "ใส่ชื่อโปรเจกต์ของคุณ.appspot.com",
+  messagingSenderId: "ใส่ค่า messagingSenderId ของคุณ",
+  appId: "ใส่ค่า appId ของคุณ"
 };
-
-const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app);
