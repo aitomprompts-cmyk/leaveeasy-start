@@ -10,6 +10,9 @@ const ฟอร์ม = document.getElementById("ฟอร์มใบลา");
 const ช่องประเภท = document.getElementById("leaveTypeId");
 const กล่องเตือน = document.getElementById("ข้อความเตือน");
 const ปุ่มบันทึก = document.getElementById("ปุ่มบันทึก");
+const ช่องเหตุผล = document.getElementById("reason");
+const ปุ่มAI = document.getElementById("ปุ่มAI");
+const ป้ายAI = document.getElementById("ป้ายAI");
 
 // ผู้ยื่นใบลา = คนที่ล็อกอินอยู่จริง (เติมค่าตอนเริ่มทำงาน)
 let ผู้ใช้ปัจจุบัน = null;
@@ -30,6 +33,7 @@ async function เริ่มทำงาน() {
 
   await โหลดประเภทการลา();
   ฟอร์ม.addEventListener("submit", บันทึกใบลา);
+  ปุ่มAI.addEventListener("click", ให้AIเลือกประเภท);
 }
 
 // ── อ่านประเภทการลาจากโฟลเดอร์ leaveTypes มาใส่รายการเลื่อนลง ──
@@ -100,6 +104,80 @@ async function บันทึกใบลา(e) {
     เตือน("บันทึกไม่สำเร็จ — " + แปลข้อผิดพลาด(err));
     ปุ่มบันทึก.disabled = false;
     ปุ่มบันทึก.textContent = "บันทึก";
+  }
+}
+
+// ── ปุ่ม AI: อ่านเหตุผล + รายชื่อประเภทที่มีจริง แล้วให้ AI เลือกให้ ──
+async function ให้AIเลือกประเภท() {
+  const เหตุผล = ช่องเหตุผล.value.trim();
+  ป้ายAI.classList.add("hidden");
+
+  if (!เหตุผล) {
+    เตือน("กรอกเหตุผลการลาก่อน แล้วค่อยกดให้ AI ช่วยจัดประเภท");
+    return;
+  }
+  if (ประเภททั้งหมด.length === 0) {
+    เตือน("ยังไม่มีประเภทการลาในระบบให้ AI เลือก");
+    return;
+  }
+
+  const ข้อความเดิม = ปุ่มAI.textContent;
+  ปุ่มAI.disabled = true;
+  ปุ่มAI.textContent = "กำลังคิด…";
+
+  const ตัวยกเลิก = new AbortController();
+  const ตัวจับเวลา = setTimeout(() => ตัวยกเลิก.abort(), 15000);
+
+  try {
+    const { aiConfig } = await import("./config.js");
+    if (!aiConfig.apiKey || aiConfig.apiKey.startsWith("ใส่")) {
+      เตือน("ยังไม่ได้ตั้งค่าคีย์ AI — ดู js/config.js");
+      return;
+    }
+
+    const รายชื่อประเภท = ประเภททั้งหมด
+      .map((t) => `id: ${t.id} · ชื่อ: ${t.name}`)
+      .join("\n");
+
+    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      signal: ตัวยกเลิก.signal,
+      headers: {
+        "Authorization": `Bearer ${aiConfig.apiKey}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: aiConfig.model,
+        messages: [{
+          role: "user",
+          content: `นี่คือรายชื่อประเภทการลาที่มีอยู่จริงในระบบ:\n${รายชื่อประเภท}\n\nเหตุผลการลาของพนักงาน: "${เหตุผล}"\n\nเลือกประเภทการลาที่ตรงที่สุดจากรายการด้านบนเท่านั้น ตอบกลับมาแค่ id ของประเภทนั้น ห้ามมีข้อความอื่นปน`
+        }]
+      })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || `HTTP ${res.status}`);
+
+    const คำตอบ = (data.choices?.[0]?.message?.content || "").trim();
+    const ประเภทที่เลือก = ประเภททั้งหมด.find((t) => คำตอบ.includes(t.id));
+
+    if (!ประเภทที่เลือก) {
+      เตือน("AI จัดประเภทให้ไม่ได้ — โปรดเลือกเอง");
+      return;
+    }
+
+    ช่องประเภท.value = ประเภทที่เลือก.id;
+    ป้ายAI.classList.remove("hidden");
+  } catch (err) {
+    if (err.name === "AbortError") {
+      เตือน("AI ตอบช้าเกินไป (เกิน 15 วินาที) — โปรดเลือกเอง");
+    } else {
+      เตือน("เรียก AI ไม่สำเร็จ — " + err.message);
+    }
+  } finally {
+    clearTimeout(ตัวจับเวลา);
+    ปุ่มAI.disabled = false;
+    ปุ่มAI.textContent = ข้อความเดิม;
   }
 }
 

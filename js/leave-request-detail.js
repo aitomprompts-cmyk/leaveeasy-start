@@ -82,7 +82,19 @@ function วาดใบลา() {
   // ปุ่มอนุมัติ / ไม่อนุมัติ ขึ้นเฉพาะใบที่ยังรอพิจารณา
   const ยังรอพิจารณา = ใบ.status === "รอพิจารณา";
   if (ยังรอพิจารณา) {
+    if (ใบ.aiSuggestion) {
+      html +=
+        '<div class="card" style="margin-top:12px">' +
+        '<p class="hint">สรุปโดย AI — โปรดตรวจสอบก่อนตัดสินใจ</p>' +
+        "<p>" + esc(ใบ.aiSuggestion) + "</p>" +
+        "</div>";
+    }
     html +=
+      '<div class="btn-row">' +
+      '<button type="button" class="btn-ghost" id="ปุ่มสรุปAI">🤖 ' +
+      (ใบ.aiSuggestion ? "สรุปใหม่ด้วย AI" : "ให้ AI ช่วยสรุปใบลา") +
+      "</button>" +
+      "</div>" +
       '<div class="btn-row">' +
       '<button type="button" class="btn-ok" id="ปุ่มอนุมัติ">อนุมัติ</button>' +
       '<button type="button" class="btn-danger" id="ปุ่มไม่อนุมัติ">ไม่อนุมัติ</button>' +
@@ -101,6 +113,96 @@ function วาดใบลา() {
     document.getElementById("ปุ่มไม่อนุมัติ")
       .addEventListener("click", () => เปลี่ยนสถานะ("ไม่อนุมัติ"));
     document.getElementById("ปุ่มลบ").addEventListener("click", ลบใบลา);
+    document.getElementById("ปุ่มสรุปAI").addEventListener("click", สรุปใบลาด้วยAI);
+  }
+}
+
+// ── ปุ่ม AI: อ่านใบลานี้ → ให้ AI เขียนสรุปสั้น ๆ → เขียนสรุปกลับลง Firestore ──
+async function สรุปใบลาด้วยAI() {
+  const เตือน = document.getElementById("เตือนสถานะ");
+  const ปุ่ม = document.getElementById("ปุ่มสรุปAI");
+  const ข้อความเดิม = ปุ่ม.textContent;
+
+  เตือน.classList.add("hidden");
+  ปุ่ม.disabled = true;
+  ปุ่ม.textContent = "กำลังสรุป…";
+
+  const ตัวยกเลิก = new AbortController();
+  const ตัวจับเวลา = setTimeout(() => ตัวยกเลิก.abort(), 15000);
+  let เนื้อหาที่ส่ง = "";
+
+  try {
+    const { aiConfig } = await import("./config.js");
+    if (!aiConfig.apiKey || aiConfig.apiKey.startsWith("ใส่")) {
+      เตือน.textContent = "⚠️ ยังไม่ได้ตั้งค่าคีย์ AI — ดู js/config.js";
+      เตือน.classList.remove("hidden");
+      return;
+    }
+
+    เนื้อหาที่ส่ง =
+      "นี่คือใบลาของพนักงาน:\n" +
+      `หัวข้อ: ${ใบ.title}\n` +
+      `ประเภทการลา: ${ใบ.leaveTypeName}\n` +
+      `เหตุผล: ${ใบ.reason}\n` +
+      `วันที่ลา: ${ใบ.startDate} ถึง ${ใบ.endDate}\n` +
+      `ผู้ขอลา: ${ใบ.requesterName}\n\n` +
+      "เขียนสรุปสั้น ๆ 2-3 ประโยค ให้หัวหน้าอ่านก่อนตัดสินใจอนุมัติ ตอบเป็นภาษาไทย ตอบแค่เนื้อความสรุป ห้ามมีคำนำหรือหัวข้ออื่นปน";
+
+    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      signal: ตัวยกเลิก.signal,
+      headers: {
+        "Authorization": `Bearer ${aiConfig.apiKey}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: aiConfig.model,
+        messages: [{ role: "user", content: เนื้อหาที่ส่ง }]
+      })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || `HTTP ${res.status}`);
+
+    const สรุป = (data.choices?.[0]?.message?.content || "").trim();
+    if (!สรุป) throw new Error("AI ไม่ได้ตอบเนื้อหากลับมา");
+
+    await updateDoc(doc(db, "leaveRequests", ใบ.id), {
+      aiSuggestion: สรุป,
+      aiSuggestionAt: เวลาตอนนี้()
+    });
+    ใบ.aiSuggestion = สรุป;
+
+    await บันทึกAiLog(เนื้อหาที่ส่ง, สรุป);
+    วาดใบลา();
+  } catch (err) {
+    const ข้อความผิดพลาด =
+      err.name === "AbortError"
+        ? "AI ตอบช้าเกินไป (เกิน 15 วินาที)"
+        : err.message;
+
+    await บันทึกAiLog(เนื้อหาที่ส่ง, "", ข้อความผิดพลาด);
+
+    เตือน.textContent =
+      err.name === "AbortError"
+        ? "⚠️ AI ตอบช้าเกินไป (เกิน 15 วินาที) — ลองกดใหม่อีกครั้ง"
+        : "❌ สรุปด้วย AI ไม่สำเร็จ — " + err.message;
+    เตือน.classList.remove("hidden");
+    ปุ่ม.disabled = false;
+    ปุ่ม.textContent = ข้อความเดิม;
+  } finally {
+    clearTimeout(ตัวจับเวลา);
+  }
+}
+
+// ── บันทึกทุกครั้งที่เรียก AI ไว้ในโฟลเดอร์ย่อย aiLog เพื่อตรวจสอบย้อนหลัง ──
+async function บันทึกAiLog(input, output, error) {
+  try {
+    const รายการ = { input, output, createdAt: เวลาตอนนี้() };
+    if (error) รายการ.error = error;
+    await addDoc(collection(db, "leaveRequests", ใบ.id, "aiLog"), รายการ);
+  } catch (e) {
+    console.error("บันทึก aiLog ไม่สำเร็จ", e);
   }
 }
 
